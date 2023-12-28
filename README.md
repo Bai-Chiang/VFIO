@@ -1,4 +1,4 @@
-Some VFIO scripts I used when testing on fedora laptop.
+Some VFIO/PCI passthrough scripts I used when testing on fedora laptop.
 
 - [ansible playbook](fedora.yml) for fedora to set up VFIO environment.
 - install [scripts](virt-install_script/). Download all iso images as root to directories specified in the script.
