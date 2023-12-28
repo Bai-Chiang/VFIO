@@ -1,0 +1,59 @@
+---
+- hosts: fedora
+
+  tasks:
+    - name: dnf install packages
+      ansible.builtin.dnf:
+        name:
+
+          # wifi
+          - iwlwifi-mvm-firmware
+          - wpa_supplicant
+          - NetworkManager-wifi
+
+          # basic tools
+          - pciutils
+          - usbutils
+          - binutils
+          - vim
+          - htop
+
+          - '@virtualization'
+        state: present
+      become: true
+
+    - name: Ignore lid close for laptop
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/logind.conf
+        regexp: '^HandleLidSwitch='
+        line: 'HandleLidSwitch=ignore'
+        insertafter: '^#HandleLidSwitch='
+      become: true
+
+    - name: Check current kernel cmdline
+      ansible.builtin.shell: grubby --info=DEFAULT | grep 'modprobe.blacklist=pcspkr intel_iommu=on iommu=pt vfio-pci.ids=10de:1f91,10de:10fa' | wc -l
+      become: true
+      changed_when: false
+      register: grub_cmdline
+
+    - name: Add kernel cmdline
+      ansible.builtin.command: grubby --args='modprobe.blacklist=pcspkr intel_iommu=on iommu=pt vfio-pci.ids=10de:1f91,10de:10fa' --update-kernel=DEFAULT
+      become: true
+      when: grub_cmdline.stdout == '0'
+ 
+    - name: Loading vfio-pci early
+      ansible.builtin.copy:
+        dest: /etc/dracut.conf.d/10-vfio.conf
+        content: |
+          force_drivers+=" vfio_pci vfio vfio_iommu_type1 "
+        owner: root
+        group: root
+        mode: '0644'
+      become: true
+      register: dracut_conf
+
+    - name: regenerate initramfs
+      ansible.builtin.command: dracut --regenerate-all --force
+      become: true
+      when: dracut_conf.changed
+

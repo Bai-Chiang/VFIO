@@ -1,0 +1,10 @@
+---
+all:
+  hosts:
+
+    fedora:
+      ansible_host: 192.168.122.1
+      ansible_user: username
+      ansible_port: 22
+      ansible_ssh_private_key_file: /home/username/.ssh/fedora
+
